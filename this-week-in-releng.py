@@ -2,7 +2,7 @@
 
 from __future__ import print_function
 
-def report(bz, bzurl, args, ignore_summary_patterns=["problem tracking"], ignore_assignees=[]):
+def make_report(bz, bzurl, args, ignore_summary_patterns=["problem tracking"], ignore_assignees=[]):
     product = "Release Engineering"
 
     components = []
@@ -44,14 +44,16 @@ def fixed_report(bz, bzurl, since):
         "resolution": "FIXED",
         "last_change_time": since
     }
-    return report(bz, bzurl, args)
+    print("Completed work (resolution is 'FIXED'):")
+    return make_report(bz, bzurl, args)
 
 def inprogress_report(bz, bzurl, since):
     args = {
         "resolution": "---",
         "last_change_time": since,
     }
-    return report(bz, bzurl, args, ignore_assignees=["nobody@mozilla.org"])
+    print("In progress work (unresolved and not assigned to nobody):")
+    return make_report(bz, bzurl, args, ignore_assignees=["nobody@mozilla.org"])
 
 if __name__ == "__main__":
     import argparse
@@ -61,16 +63,18 @@ if __name__ == "__main__":
     parser.add_argument("--bugzilla-url", dest="bzurl", default="https://bugzilla.mozilla.org")
     parser.add_argument("--bugzilla-api-url", dest="bzapi", default="http://bugzilla.mozilla.org/rest")
     parser.add_argument("--since", dest="since")
-    parser.add_argument("report", nargs=1)
+    parser.add_argument("reports", nargs="+")
 
     args = parser.parse_args()
 
     bz = BugzillaClient()
     bz.configure(args.bzapi, None, None)
 
-    if args.report[0] == "fixed":
-        print(fixed_report(bz, args.bzurl, args.since))
-    elif args.report[0] == "inprogress":
-        print(inprogress_report(bz, args.bzurl, args.since))
-    else:
-        raise Exception("Invalid Report")
+    for report in args.reports:
+        if report not in ("fixed", "inprogress"):
+            raise Exception("Invalid report type: '%s'" % report)
+    for report in args.reports:
+        if report == "fixed":
+            print(fixed_report(bz, args.bzurl, args.since))
+        elif report == "inprogress":
+            print(inprogress_report(bz, args.bzurl, args.since))
