@@ -2,9 +2,7 @@
 
 from __future__ import print_function
 
-def make_report(bz, bzurl, args, ignore_summary_patterns=["problem tracking"], ignore_assignees=[]):
-    product = "Release Engineering"
-
+def make_report(product, bz, bzurl, args, ignore_summary_patterns=["problem tracking"], ignore_assignees=[]):
     components = []
     bugs = {}
     for component in bz.request("GET", "product/%s" % product)["products"][0]["components"]:
@@ -39,27 +37,28 @@ def make_report(bz, bzurl, args, ignore_summary_patterns=["problem tracking"], i
     report.append("</ul>")
     return "\n".join(report)
 
-def fixed_report(bz, bzurl, since):
+def fixed_report(product, bz, bzurl, since):
     args = {
         "resolution": "FIXED",
         "last_change_time": since
     }
     print("Completed work (resolution is 'FIXED'):")
-    return make_report(bz, bzurl, args)
+    return make_report(product, bz, bzurl, args)
 
-def inprogress_report(bz, bzurl, since):
+def inprogress_report(product, bz, bzurl, since):
     args = {
         "resolution": "---",
         "last_change_time": since,
     }
     print("In progress work (unresolved and not assigned to nobody):")
-    return make_report(bz, bzurl, args, ignore_assignees=["nobody@mozilla.org"])
+    return make_report(product, bz, bzurl, args, ignore_assignees=["nobody@mozilla.org"])
 
 if __name__ == "__main__":
     import argparse
     from bzrest.client import BugzillaClient
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--product", dest="product", default="Release Engineering")
     parser.add_argument("--bugzilla-url", dest="bzurl", default="https://bugzilla.mozilla.org")
     parser.add_argument("--bugzilla-api-url", dest="bzapi", default="http://bugzilla.mozilla.org/rest")
     parser.add_argument("--since", dest="since")
@@ -75,6 +74,6 @@ if __name__ == "__main__":
             raise Exception("Invalid report type: '%s'" % report)
     for report in args.reports:
         if report == "fixed":
-            print(fixed_report(bz, args.bzurl, args.since))
+            print(fixed_report(args.product, bz, args.bzurl, args.since))
         elif report == "inprogress":
-            print(inprogress_report(bz, args.bzurl, args.since))
+            print(inprogress_report(args.product, bz, args.bzurl, args.since))
